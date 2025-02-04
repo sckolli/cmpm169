@@ -1,132 +1,98 @@
 'use strict';
 
-let flowers = [];
-let raindrops = [];
-const numFlowers = 6; // Number of flowers in the scene
-const numRaindrops = 100; // Number of raindrops
-let windSpeed = 0.5; // Wind strength
+let sunflowers = [];
+let numSunflowers = 5; // Number of sunflowers
 let sun;
 
 function setup() {
-  let canvas = createCanvas(720, 720);
-  canvas.parent("canvas-container"); // Attach canvas to the div if using HTML layout
-
-  // Create flowers in random positions
-  for (let i = 0; i < numFlowers; i++) {
-    flowers.push(new Flower(random(100, width - 100), height - random(80, 150)));
-  }
-
-  // Create initial raindrops
-  for (let i = 0; i < numRaindrops; i++) {
-    raindrops.push(new Raindrop(random(width), random(-500, 0)));
+  createCanvas(720, 720);
+  
+  // Create sunflowers in random positions
+  for (let i = 0; i < numSunflowers; i++) {
+    let x = random(100, width - 100); // Make sure flowers are within the canvas width
+    let y = random(height - 200, height - 150); // Ensure flowers are not drawn below the sand
+    sunflowers.push(new Sunflower(x, y));
   }
 
   sun = new Sun(100, 100, 80); // Sun position and size
 }
 
 function draw() {
-  background(30, 30, 50); // Dark blue sky
-
-  // Draw the sand
-  noStroke();
-  fill(237, 201, 175); // Sandy color
-  rect(0, height - 100, width, 100);
+  drawBackground(); // Custom background function
+  drawSand();
 
   // Draw the sun
   sun.display();
 
-  // Draw flowers
-  for (let flower of flowers) {
-    flower.grow();
-    flower.sway(); // Add swaying due to wind
-    flower.display();
-  }
-
-  // Draw rain
-  for (let drop of raindrops) {
-    drop.fall();
-    drop.display();
-  }
-
-  // Randomly change wind direction every 2 seconds
-  if (frameCount % 120 === 0) {
-    windSpeed = random(-1, 1); // Wind changes direction
+  // Draw sunflowers
+  for (let sunflower of sunflowers) {
+    sunflower.display();
   }
 }
 
-// Flower class
-class Flower {
-  constructor(x, y) {
-    this.x = x;
-    this.y = y;
-    this.size = 10; // Initial flower size
-    this.maxSize = random(40, 60); // Maximum size of the flower
-    this.petalCount = int(random(6, 10)); // Number of petals
-    this.growthRate = 0.1; // Growth speed
-    this.swayOffset = 0; // Offset for swaying effect
+// Draw background with gradient sky
+function drawBackground() {
+  // Gradient sky
+  for (let y = 0; y < height; y++) {
+    let inter = map(y, 0, height, 0, 1);
+    let colorTop = color(135, 206, 250); // Light blue
+    let colorBottom = color(30, 144, 255); // Darker blue
+    let skyColor = lerpColor(colorTop, colorBottom, inter);
+    stroke(skyColor);
+    line(0, y, width, y);
   }
 
-  grow() {
-    if (this.size < this.maxSize) {
-      this.size += this.growthRate;
-    }
-  }
+  // Clouds
+  drawCloud(200, 150, 50);
+  drawCloud(400, 100, 70);
+  drawCloud(550, 200, 40);
+}
 
-  sway() {
-    // Simulate swaying effect due to wind
-    this.swayOffset = sin(frameCount * 0.05) * windSpeed * 10;
-  }
+// Draw sand
+function drawSand() {
+  noStroke();
+  fill(237, 201, 175); // Sandy color
+  rect(0, height - 100, width, 100);
+}
 
-  display() {
-    push();
-    translate(this.x + this.swayOffset, this.y);
+// Function to draw clouds
+function drawCloud(x, y, size) {
+  fill(255); // White color for clouds
+  noStroke();
+  ellipse(x, y, size, size * 0.7);
+  ellipse(x + size * 0.5, y - size * 0.3, size * 0.8, size * 0.6);
+  ellipse(x - size * 0.5, y - size * 0.2, size * 0.7, size * 0.5);
+}
 
-    // Draw stem
+// Sunflower class
+function Sunflower(x, y) {
+  this.x = x;
+  this.y = y;
+  
+  this.display = function() {
+    // Draw the stem
     stroke(34, 139, 34); // Green stem
-    strokeWeight(4);
-    line(0, 0, 0, 50);
+    strokeWeight(6);
+    line(this.x, this.y, this.x, this.y + 80);
 
-    // Draw petals
+    // Draw the leaves
     noStroke();
-    fill(255, 204, 0); // Yellow petals
-    for (let i = 0; i < this.petalCount; i++) {
-      let angle = TWO_PI / this.petalCount * i;
-      let petalX = cos(angle) * this.size;
-      let petalY = sin(angle) * this.size;
-      ellipse(petalX, petalY, this.size / 2, this.size);
+    fill(34, 139, 34);
+    ellipse(this.x - 10, this.y + 40, 20, 10);
+    ellipse(this.x + 10, this.y + 40, 20, 10);
+
+    // Draw sunflower petals
+    fill(255, 204, 0); // Yellow
+    for (let i = 0; i < 12; i++) {
+      let angle = TWO_PI / 12 * i;
+      let petalX = this.x + cos(angle) * 20;
+      let petalY = this.y + sin(angle) * 20;
+      ellipse(petalX, petalY, 15, 30);
     }
 
-    // Draw center (seed head)
-    fill(102, 51, 0); // Brown center
-    ellipse(0, 0, this.size / 2);
-
-    pop();
-  }
-}
-
-// Raindrop class
-class Raindrop {
-  constructor(x, y) {
-    this.x = x;
-    this.y = y;
-    this.speed = random(4, 8); // Falling speed
-  }
-
-  fall() {
-    this.y += this.speed;
-    this.x += windSpeed; // Raindrops are affected by wind
-
-    // Reset raindrop to the top if it falls below the canvas
-    if (this.y > height) {
-      this.y = random(-50, 0);
-      this.x = random(width);
-    }
-  }
-
-  display() {
-    stroke(173, 216, 230); // Light blue raindrop
-    strokeWeight(2);
-    line(this.x, this.y, this.x, this.y + 10);
+    // Draw sunflower center
+    fill(139, 69, 19); // Brown center
+    ellipse(this.x, this.y, 30, 30);
   }
 }
 
@@ -141,7 +107,7 @@ class Sun {
   display() {
     noStroke();
     fill(255, 223, 0); // Bright yellow sun
-    ellipse(this.x, this.y, this.size);
+    ellipse(this.x, this.y, this.size, this.size);
 
     // Animated sun rays
     stroke(255, 223, 0, 150); // Slightly transparent rays
